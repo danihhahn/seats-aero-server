@@ -22,8 +22,10 @@ def buscar_voos():
     if not origem or not destino or not data:
         return jsonify({"erro": "Parâmetros inválidos. Use origem, destino e data."}), 400
     
-    url = f"https://api.seats.aero/v1/search?origin={origem}&destination={destino}&date={data}"
-    headers = {"Authorization": f"Bearer {SEATS_AERO_API_KEY}"}
+    url = f"https://seats.aero/partnerapi/search?origin={origem}&destination={destino}&date={data}"
+    headers = {
+    "Partner-Authorization": "pro_2mYiRPo4mnGgDsp8RO4tGVSvH4a",
+    "accept": "application/json"}
     
     response = requests.get(url, headers=headers)
     
