@@ -24,8 +24,9 @@ MILHEIRO_PRECOS = {
 def buscar_melhores_voos(origem, destino, data):
     url = f"https://seats.aero/partnerapi/search?origin_airport={origem}&destination_airport={destino}&start_date={data}&end_date={data}"
     headers = {"Partner-Authorization": f"{SEATS_AERO_API_KEY}", "Accept": "application/json"}
+    
     response = requests.get(url, headers=headers)
-
+    
     if response.status_code != 200:
         return {"erro": f"Erro na requisição: {response.status_code}", "detalhes": response.text}
 
@@ -33,11 +34,34 @@ def buscar_melhores_voos(origem, destino, data):
     melhores_opcoes = []
 
     for voo in dados.get("data", []):
-        # Priorizar Business Class, mas considerar Econômica se for mais barata
+        classe = None
+        milhas = None
+        programa = voo.get("Source", "Desconhecido")
+
         if voo.get("JAvailable", False):
             classe = "Executiva"
             milhas = int(voo.get("JMileageCostRaw", 0))
-            programa = voo.get("Source", "Desconhecido")
         elif voo.get("YAvailable", False):
             classe = "Econômica"
-            milhas
+            milhas = int(voo.get("YMileageCostRaw", 0))
+        
+        if milhas is None:
+            continue  # Ignorar voos sem milhas definidas
+
+        preco_milheiro = MILHEIRO_PRECOS.get(programa.capitalize(), 0)
+        custo_real = round((milhas / 1000) * preco_milheiro, 2) if preco_milheiro else None
+
+        melhores_opcoes.append({
+            "Data": voo.get("Date"),
+            "Origem": origem,
+            "Destino": destino,
+            "Companhia": voo.get("JAirlinesRaw", voo.get("YAirlinesRaw", "")),
+            "Milhas": milhas,
+            "Classe": classe,
+            "Custo Real R$": custo_real,
+            "Programa": programa.capitalize()
+        })
+
+    melhores_opcoes.sort(key=lambda x: x["Custo Real R$"] if x["Custo Real R$"] is not None else float('inf'))
+    
+    return melhores_opcoes
